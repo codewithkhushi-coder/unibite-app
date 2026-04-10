@@ -1,0 +1,61 @@
+# Flutter/Dart related
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.pub-cache/
+.pub/
+build/
+lib/generated/
+*.g.dart
+*.freezed.dart
+
+# Android related
+android/**/gradle-wrapper.jar
+android/.gradle/
+android/app/local.properties
+android/app/**/generated.xml
+android/app/google-services.json
+android/key.properties
+android/*.keystore
+android/*.jks
+
+# iOS related
+ios/Pods/
+ios/.symlinks/
+ios/Flutter/Flutter.framework
+ios/Flutter/Flutter.podspec
+ios/Flutter/Generated.xcconfig
+ios/Flutter/ephemeral/
+ios/ServiceDefinitions.json
+ios/Runner/GoogleService-Info.plist
+*.moved-aside
+*.app
+*.ipa
+*.on_device_tests.json
+
+# Tooling related
+.idea/
+.vscode/
+*.iml
+*.iws
+*.ipr
+.history
+
+# Environment / Secret related
+.env
+.env.*
+! .env.example
+secrets.json
+supabase/key.txt
+*.pem
+*.key
+
+# OS related
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Miscellaneous
+*.log
+*.swp
+node_modules/

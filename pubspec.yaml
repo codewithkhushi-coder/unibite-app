@@ -1,0 +1,43 @@
+name: unibite
+description: "A feature-first, role-based food delivery application."
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.3.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  # State Management & Service Locator
+  flutter_riverpod: ^2.5.1
+  get_it: ^7.6.7
+  
+  # Backend
+  supabase_flutter: ^2.4.0
+  
+  # Navigation
+  go_router: ^13.2.0
+  
+  # UI & Styling
+  google_fonts: ^6.2.1
+  flutter_screenutil: ^5.9.0
+  cached_network_image: ^3.3.1
+  lucide_icons: 0.257.0
+  
+  # Utils
+  shared_preferences: ^2.2.2
+  intl: ^0.19.0
+  equatable: ^2.0.5
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0
+  build_runner: ^2.4.8
+
+flutter:
+  uses-material-design: true
+  # assets:
+  #   - assets/images/
