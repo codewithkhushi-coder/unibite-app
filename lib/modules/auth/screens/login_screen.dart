@@ -33,9 +33,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
     setState(() => _isLoading = true);
     try {
+      final role = ref.read(selectedRoleProvider);
       await ref.read(authControllerProvider.notifier).login(
             _contactController.text.trim(),
             _passwordController.text.trim(),
+            role: role,
           );
       // Success will be handled by the router listener
     } catch (e) {

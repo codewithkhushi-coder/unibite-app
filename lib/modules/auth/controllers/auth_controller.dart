@@ -26,6 +26,9 @@ class SignupData {
 
 final signupDataProvider = StateProvider<SignupData>((ref) => SignupData());
 
+// Provider to track selected role from Role Selection screen
+final selectedRoleProvider = StateProvider<UserRole>((ref) => UserRole.user);
+
 class AuthController extends Notifier<UserProfile?> {
   @override
   UserProfile? build() {
@@ -44,16 +47,17 @@ class AuthController extends Notifier<UserProfile?> {
 
   Future<void> verifyOtp(String token) async {
     final emailOrPhone = ref.read(signupDataProvider).emailOrPhone;
+    final role = ref.read(selectedRoleProvider);
     if (emailOrPhone == null) throw Exception('Email or Phone not set');
-    await ref.read(authServiceProvider).verifyOtp(emailOrPhone, token);
+    await ref.read(authServiceProvider).verifyOtp(emailOrPhone, token, role: role);
   }
 
   Future<void> completeSignup(String password, String fullName, UserRole role) async {
     await ref.read(authServiceProvider).completeSignup(password, fullName, role);
   }
 
-  Future<void> login(String emailOrPhone, String password) async {
-    await ref.read(authServiceProvider).login(emailOrPhone, password);
+  Future<void> login(String emailOrPhone, String password, {UserRole? role}) async {
+    await ref.read(authServiceProvider).login(emailOrPhone, password, role: role);
   }
 
   Future<void> logout() async {

@@ -10,11 +10,37 @@ import '../../modules/auth/screens/otp_verification_screen.dart';
 import '../../modules/auth/screens/set_password_screen.dart';
 import '../../modules/auth/controllers/auth_controller.dart';
 import '../models/user_role.dart';
+import '../../modules/user/screens/user_dashboard_shell.dart';
+import '../../modules/user/screens/canteen_details_screen.dart';
+import '../../modules/user/screens/canteen_list_screen.dart';
+import '../../modules/user/widgets/cart_screen.dart';
+import '../../modules/user/screens/checkout_screen.dart';
+import '../../modules/user/screens/order_tracking_screen.dart';
+import '../../modules/user/screens/orders_history_screen.dart';
+import '../../modules/user/screens/orders_history_screen.dart';
+import '../../modules/user/screens/profile_screen.dart';
 import '../../modules/user/widgets/user_home_screen.dart';
-import '../../modules/vendor/widgets/vendor_dashboard_screen.dart';
-import '../../modules/vendor/widgets/menu_management_screen.dart';
-import '../../modules/delivery/widgets/delivery_dashboard_screen.dart';
-import '../../modules/admin/widgets/admin_dashboard_screen.dart';
+import '../../modules/vendor/screens/vendor_dashboard_shell.dart';
+import '../../modules/vendor/screens/restaurant_home_screen.dart';
+import '../../modules/vendor/screens/restaurant_orders_screen.dart';
+import '../../modules/vendor/screens/menu_management_screen.dart';
+import '../../modules/vendor/screens/add_food_item_screen.dart';
+import '../../modules/vendor/screens/edit_food_item_screen.dart';
+import '../../modules/vendor/screens/sales_screen.dart';
+import '../../modules/vendor/screens/restaurant_profile_screen.dart';
+import '../../modules/delivery/screens/delivery_dashboard_shell.dart';
+import '../../modules/delivery/screens/delivery_home_screen.dart';
+import '../../modules/delivery/screens/assigned_orders_screen.dart';
+import '../../modules/delivery/screens/delivery_tracking_screen.dart';
+import '../../modules/delivery/screens/delivery_profile_screen.dart';
+import '../../modules/admin/screens/admin_dashboard_shell.dart';
+import '../../modules/admin/screens/admin_home_screen.dart';
+import '../../modules/admin/screens/admin_orders_screen.dart';
+import '../../modules/admin/screens/canteen_management_screen.dart';
+import '../../modules/admin/screens/add_canteen_screen.dart';
+import '../../modules/admin/screens/delivery_management_screen.dart';
+import '../../modules/admin/screens/analytics_screen.dart';
+import '../../modules/admin/screens/admin_profile_screen.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
   final authState = ref.watch(authControllerProvider);
@@ -30,22 +56,20 @@ final routerProvider = Provider<GoRouter>((ref) {
                          state.uri.path == '/set-password';
       
       if (authState == null) {
-        // Not logged in: Allow auth routes
         return isAuthRoute ? null : '/splash';
       }
 
-      // If logged in and on an auth route, redirect to correct dashboard
       if (isAuthRoute) {
         switch (authState.role) {
           case UserRole.admin:
-            return '/admin-dashboard';
+            return '/admin/home';
           case UserRole.vendor:
-            return '/vendor-dashboard';
+            return '/vendor/home';
           case UserRole.delivery:
-            return '/delivery-dashboard';
+            return '/delivery/home';
           case UserRole.user:
           case UserRole.customer:
-            return '/user-home';
+            return '/user/home';
         }
       }
       return null;
@@ -84,30 +108,176 @@ final routerProvider = Provider<GoRouter>((ref) {
         name: 'set_password',
         builder: (context, state) => const SetPasswordScreen(),
       ),
+      
+      // User Dashboard with Shell
+      ShellRoute(
+        builder: (context, state, child) => UserDashboardShell(child: child),
+        routes: [
+          GoRoute(
+            path: '/user/home',
+            name: 'user_home',
+            builder: (context, state) => const UserHomeScreen(),
+          ),
+          GoRoute(
+            path: '/user/cart',
+            name: 'user_cart',
+            builder: (context, state) => const CartScreen(),
+          ),
+          GoRoute(
+            path: '/user/orders',
+            name: 'user_orders',
+            builder: (context, state) => const OrderHistoryScreen(),
+          ),
+          GoRoute(
+            path: '/user/profile',
+            name: 'user_profile',
+            builder: (context, state) => const ProfileScreen(),
+          ),
+        ],
+      ),
+
+      // Standalone User Screens
       GoRoute(
-        path: '/user-home',
-        name: 'user_home',
-        builder: (context, state) => const UserHomeScreen(),
+        path: '/user/canteen-list',
+        name: 'canteen_list',
+        builder: (context, state) => const CanteenListScreen(),
       ),
       GoRoute(
-        path: '/vendor-dashboard',
-        name: 'vendor_dashboard',
-        builder: (context, state) => const VendorDashboardScreen(),
+        path: '/user/canteen/:id',
+        name: 'canteen_details',
+        builder: (context, state) => CanteenDetailsScreen(
+          canteenId: state.pathParameters['id']!,
+        ),
       ),
       GoRoute(
-        path: '/menu-management',
-        name: 'menu_management',
-        builder: (context, state) => const MenuManagementScreen(),
+        path: '/user/checkout',
+        name: 'checkout',
+        builder: (context, state) => const CheckoutScreen(),
       ),
       GoRoute(
-        path: '/delivery-dashboard',
-        name: 'delivery_dashboard',
-        builder: (context, state) => const DeliveryDashboardScreen(),
+        path: '/user/order-tracking/:id',
+        name: 'order_tracking',
+        builder: (context, state) => OrderTrackingScreen(
+          orderId: state.pathParameters['id']!,
+        ),
+      ),
+
+      // Restaurant Dashboard with Shell
+      ShellRoute(
+        builder: (context, state, child) => VendorDashboardShell(child: child),
+        routes: [
+          GoRoute(
+            path: '/vendor/home',
+            name: 'vendor_home',
+            builder: (context, state) => const RestaurantHomeScreen(),
+          ),
+          GoRoute(
+            path: '/vendor/orders',
+            name: 'vendor_orders',
+            builder: (context, state) => const RestaurantOrdersScreen(),
+          ),
+          GoRoute(
+            path: '/vendor/menu',
+            name: 'vendor_menu',
+            builder: (context, state) => const MenuManagementScreen(),
+          ),
+          GoRoute(
+            path: '/vendor/sales',
+            name: 'vendor_sales',
+            builder: (context, state) => const SalesScreen(),
+          ),
+          GoRoute(
+            path: '/vendor/profile',
+            name: 'vendor_profile',
+            builder: (context, state) => const RestaurantProfileScreen(),
+          ),
+        ],
+      ),
+
+      // Standalone Restaurant Screens
+      GoRoute(
+        path: '/vendor/add-item',
+        name: 'add_menu_item',
+        builder: (context, state) => const AddFoodItemScreen(),
       ),
       GoRoute(
-        path: '/admin-dashboard',
-        name: 'admin_dashboard',
-        builder: (context, state) => const AdminDashboardScreen(),
+        path: '/vendor/edit-item/:id',
+        name: 'edit_menu_item',
+        builder: (context, state) => EditFoodItemScreen(
+          itemId: state.pathParameters['id']!,
+        ),
+      ),
+      // Delivery Dashboard with Shell
+      ShellRoute(
+        builder: (context, state, child) => DeliveryDashboardShell(child: child),
+        routes: [
+          GoRoute(
+            path: '/delivery/home',
+            name: 'delivery_home',
+            builder: (context, state) => const DeliveryHomeScreen(),
+          ),
+          GoRoute(
+            path: '/delivery/assigned',
+            name: 'assigned_orders',
+            builder: (context, state) => const AssignedOrdersScreen(),
+          ),
+          GoRoute(
+            path: '/delivery/tracking/:id',
+            name: 'delivery_tracking',
+            builder: (context, state) => DeliveryTrackingScreen(
+              orderId: state.pathParameters['id']!,
+            ),
+          ),
+          GoRoute(
+            path: '/delivery/profile',
+            name: 'delivery_profile',
+            builder: (context, state) => const DeliveryProfileScreen(),
+          ),
+        ],
+      ),
+
+      // Admin Dashboard with Shell
+      ShellRoute(
+        builder: (context, state, child) => AdminDashboardShell(child: child),
+        routes: [
+          GoRoute(
+            path: '/admin/home',
+            name: 'admin_home',
+            builder: (context, state) => const AdminHomeScreen(),
+          ),
+          GoRoute(
+            path: '/admin/orders',
+            name: 'admin_orders',
+            builder: (context, state) => const AdminOrdersScreen(),
+          ),
+          GoRoute(
+            path: '/admin/canteens',
+            name: 'admin_canteens',
+            builder: (context, state) => const CanteenManagementScreen(),
+          ),
+          GoRoute(
+            path: '/admin/delivery',
+            name: 'admin_delivery',
+            builder: (context, state) => const DeliveryManagementScreen(),
+          ),
+          GoRoute(
+            path: '/admin/analytics',
+            name: 'admin_analytics',
+            builder: (context, state) => const AnalyticsScreen(),
+          ),
+          GoRoute(
+            path: '/admin/profile',
+            name: 'admin_profile',
+            builder: (context, state) => const AdminProfileScreen(),
+          ),
+        ],
+      ),
+
+      // Standalone Admin Screens
+      GoRoute(
+        path: '/admin/add-canteen',
+        name: 'add_canteen',
+        builder: (context, state) => const AddCanteenScreen(),
       ),
     ],
   );

@@ -1,14 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/models/user_role.dart';
+import '../controllers/auth_controller.dart';
 
-class RoleSelectionScreen extends StatelessWidget {
+class RoleSelectionScreen extends ConsumerWidget {
   const RoleSelectionScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return Scaffold(
       body: SafeArea(
         child: Padding(
@@ -25,10 +27,11 @@ class RoleSelectionScreen extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 8),
-              Text(
+              const Text(
                 'Choose your role to continue',
-                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                style: TextStyle(
                   color: AppTheme.textLight,
+                  fontSize: 16,
                 ),
               ),
               const SizedBox(height: 48),
@@ -40,27 +43,31 @@ class RoleSelectionScreen extends StatelessWidget {
                   children: [
                     _buildRoleCard(
                       context,
+                      ref,
                       title: 'Admin',
                       icon: LucideIcons.shieldCheck,
                       role: UserRole.admin,
                     ),
                     _buildRoleCard(
                       context,
+                      ref,
                       title: 'User',
                       icon: LucideIcons.user,
                       role: UserRole.user,
                     ),
                     _buildRoleCard(
                       context,
+                      ref,
                       title: 'Restaurant',
                       icon: LucideIcons.utensils,
                       role: UserRole.vendor,
                     ),
                     _buildRoleCard(
                       context,
-                      title: 'Customer',
-                      icon: LucideIcons.shoppingBag,
-                      role: UserRole.customer,
+                      ref,
+                      title: 'Delivery Boy',
+                      icon: LucideIcons.truck,
+                      role: UserRole.delivery,
                     ),
                   ],
                 ),
@@ -84,19 +91,23 @@ class RoleSelectionScreen extends StatelessWidget {
   }
 
   Widget _buildRoleCard(
-    BuildContext context, {
+    BuildContext context,
+    WidgetRef ref, {
     required String title,
     required IconData icon,
     required UserRole role,
   }) {
     return GestureDetector(
       onTap: () {
+        // Update the selected role in the provider
+        ref.read(selectedRoleProvider.notifier).state = role;
+        
         // Navigate to login with selected role
         context.push('/login', extra: role);
       },
       child: Container(
         decoration: BoxDecoration(
-          color: AppTheme.softPink,
+          color: AppTheme.softPink.withOpacity(0.5),
           borderRadius: BorderRadius.circular(24),
           border: Border.all(color: AppTheme.primaryPink.withOpacity(0.1)),
         ),
