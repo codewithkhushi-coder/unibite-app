@@ -10,6 +10,8 @@ import '../../modules/auth/screens/otp_verification_screen.dart';
 import '../../modules/auth/screens/set_password_screen.dart';
 import '../../modules/auth/controllers/auth_controller.dart';
 import '../models/user_role.dart';
+import '../models/food_item.dart';
+import '../models/order.dart';
 import '../../modules/user/screens/user_dashboard_shell.dart';
 import '../../modules/user/screens/canteen_details_screen.dart';
 import '../../modules/user/screens/canteen_list_screen.dart';
@@ -57,6 +59,13 @@ final routerProvider = Provider<GoRouter>((ref) {
       
       if (authState == null) {
         return isAuthRoute ? null : '/splash';
+      }
+
+      // If user is authenticated but has a placeholder profile, 
+      // they MUST finish setting their password/name first.
+      if (authState.isPlaceholder) {
+        if (state.uri.path == '/set-password') return null;
+        return '/set-password';
       }
 
       if (isAuthRoute) {
@@ -203,9 +212,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/vendor/edit-item/:id',
         name: 'edit_menu_item',
-        builder: (context, state) => EditFoodItemScreen(
-          itemId: state.pathParameters['id']!,
-        ),
+        builder: (context, state) {
+          final item = state.extra as FoodItem;
+          return EditFoodItemScreen(item: item);
+        },
       ),
       // Delivery Dashboard with Shell
       ShellRoute(
@@ -224,9 +234,10 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: '/delivery/tracking/:id',
             name: 'delivery_tracking',
-            builder: (context, state) => DeliveryTrackingScreen(
-              orderId: state.pathParameters['id']!,
-            ),
+            builder: (context, state) {
+              final order = state.extra as Order;
+              return DeliveryTrackingScreen(order: order);
+            },
           ),
           GoRoute(
             path: '/delivery/profile',

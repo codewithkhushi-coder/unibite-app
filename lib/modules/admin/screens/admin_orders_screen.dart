@@ -1,15 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/models/order.dart';
 import '../widgets/admin_order_monitor_card.dart';
+import '../controllers/admin_controller.dart';
 
-class AdminOrdersScreen extends StatefulWidget {
+class AdminOrdersScreen extends ConsumerStatefulWidget {
   const AdminOrdersScreen({super.key});
 
   @override
-  State<AdminOrdersScreen> createState() => _AdminOrdersScreenState();
+  ConsumerState<AdminOrdersScreen> createState() => _AdminOrdersScreenState();
 }
 
-class _AdminOrdersScreenState extends State<AdminOrdersScreen> with SingleTickerProviderStateMixin {
+class _AdminOrdersScreenState extends ConsumerState<AdminOrdersScreen> with SingleTickerProviderStateMixin {
   late TabController _tabController;
 
   @override
@@ -19,7 +22,16 @@ class _AdminOrdersScreenState extends State<AdminOrdersScreen> with SingleTicker
   }
 
   @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final adminState = ref.watch(adminControllerProvider);
+    final allOrders = adminState.liveOrders;
+
     return Scaffold(
       backgroundColor: AppTheme.surfaceWhite,
       appBar: AppBar(
@@ -38,60 +50,69 @@ class _AdminOrdersScreenState extends State<AdminOrdersScreen> with SingleTicker
           indicatorColor: AppTheme.primaryPink,
           indicatorWeight: 3,
           labelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
-          tabs: const [
-            Tab(text: 'All Orders (84)'),
-            Tab(text: 'Preparing (32)'),
-            Tab(text: 'Out for Delivery (14)'),
-            Tab(text: 'Cancelled (4)'),
+          tabs: [
+            Tab(text: 'All Orders (${allOrders.length})'),
+            Tab(text: 'Preparing (${allOrders.where((o) => o.status == OrderStatus.preparing).length})'),
+            Tab(text: 'Delivery (${allOrders.where((o) => o.status == OrderStatus.outForDelivery).length})'),
+            Tab(text: 'Cancelled (${allOrders.where((o) => o.status == OrderStatus.cancelled).length})'),
           ],
         ),
       ),
       body: TabBarView(
         controller: _tabController,
         children: [
-          _buildOrderList('all'),
-          _buildOrderList('preparing'),
-          _buildOrderList('delivery'),
-          _buildOrderList('cancelled'),
+          _buildOrderList(allOrders),
+          _buildOrderList(allOrders.where((o) => o.status == OrderStatus.preparing).toList()),
+          _buildOrderList(allOrders.where((o) => o.status == OrderStatus.outForDelivery).toList()),
+          _buildOrderList(allOrders.where((o) => o.status == OrderStatus.cancelled).toList()),
         ],
       ),
     );
   }
 
-  Widget _buildOrderList(String filter) {
-    return ListView(
+  Widget _buildOrderList(List<Order> orders) {
+    if (orders.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.assignment_outlined, size: 48, color: Colors.grey.shade300),
+            const SizedBox(height: 16),
+            const Text('No orders found', style: TextStyle(color: AppTheme.textLight)),
+          ],
+        ),
+      );
+    }
+
+    return ListView.builder(
       padding: const EdgeInsets.all(16),
-      children: [
-        AdminOrderMonitorCard(
-          orderId: 'UB-9012',
-          canteen: 'Engineering Canteen',
-          customer: 'Khushi P.',
-          status: 'Preparing',
-          type: 'Delivery',
-          time: 'Active 12m',
-          total: '₹140',
-        ),
-        const SizedBox(height: 12),
-        AdminOrderMonitorCard(
-          orderId: 'UB-9014',
-          canteen: 'Main Mess B',
-          customer: 'Aarav S.',
-          status: 'Out for Delivery',
-          type: 'Delivery',
-          time: 'Active 24m',
-          total: '₹320',
-        ),
-        const SizedBox(height: 12),
-        AdminOrderMonitorCard(
-          orderId: 'UB-9015',
-          canteen: 'Night Cafe',
-          customer: 'Rohan M.',
-          status: 'Cancelled',
-          type: 'Pickup',
-          time: 'Cancelled 2m ago',
-          total: '₹85',
-        ),
-      ],
+      itemCount: orders.length,
+      itemBuilder: (context, index) {
+        final order = orders[index];
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 12),
+          child: AdminOrderMonitorCard(
+            orderId: order.id.substring(0, 8).toUpperCase(),
+            canteen: order.canteenName,
+            customer: 'Customer', // Would fetch name
+            status: _formatStatus(order.status),
+            type: order.orderType == OrderType.delivery ? 'Delivery' : 'Pickup',
+            time: 'Active ${DateTime.now().difference(order.createdAt).inMinutes}m',
+            total: '₹${order.totalPrice.toStringAsFixed(0)}',
+          ),
+        );
+      },
     );
   }
+
+  String _formatStatus(OrderStatus status) {
+    switch (status) {
+      case OrderStatus.preparing: return 'Preparing';
+      case OrderStatus.outForDelivery: return 'Out for Delivery';
+      case OrderStatus.delivered: return 'Delivered';
+      case OrderStatus.cancelled: return 'Cancelled';
+      default: return 'Accepted';
+    }
+  }
 }
+

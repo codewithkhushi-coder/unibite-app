@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../auth/controllers/auth_controller.dart';
+import '../controllers/vendor_controller.dart';
+import '../../../core/models/order.dart';
 import '../widgets/restaurant_stat_card.dart';
 
 class RestaurantHomeScreen extends ConsumerWidget {
@@ -11,6 +13,8 @@ class RestaurantHomeScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final user = ref.watch(authControllerProvider);
+    final vendorState = ref.watch(vendorControllerProvider);
+    final canteen = vendorState.canteen;
 
     return Scaffold(
       backgroundColor: AppTheme.surfaceWhite,
@@ -31,7 +35,7 @@ class RestaurantHomeScreen extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildHeader(user?.fullName ?? 'Manager'),
+            _buildHeader(user?.fullName ?? 'Manager', canteen?.queueLoadStatus ?? 'Low'),
             const SizedBox(height: 24),
             
             // Primary Stats
@@ -39,23 +43,23 @@ class RestaurantHomeScreen extends ConsumerWidget {
               children: [
                 Expanded(
                   child: RestaurantStatCard(
-                    title: 'Today Sales',
-                    value: '₹12,450',
-                    subtitle: '+15% from avg',
+                    title: 'Today Orders',
+                    value: (vendorState.pendingOrders.length + vendorState.activeOrders.length + vendorState.completedOrders.length).toString(),
+                    subtitle: '${vendorState.pendingOrders.length} pending',
                     backgroundColor: AppTheme.primaryPink,
                     textColor: Colors.white,
-                    icon: Icons.payments_rounded,
+                    icon: Icons.shopping_basket_rounded,
                   ),
                 ),
                 const SizedBox(width: 16),
                 Expanded(
                   child: RestaurantStatCard(
-                    title: 'Total Orders',
-                    value: '48',
-                    subtitle: '12 pending',
+                    title: 'Revenue',
+                    value: '₹${vendorState.completedOrders.fold(0.0, (sum, o) => sum + o.totalAmount).toStringAsFixed(0)}',
+                    subtitle: 'From ${vendorState.completedOrders.length} orders',
                     backgroundColor: Colors.white,
                     textColor: AppTheme.textDark,
-                    icon: Icons.shopping_basket_rounded,
+                    icon: Icons.payments_rounded,
                   ),
                 ),
               ],
@@ -63,10 +67,14 @@ class RestaurantHomeScreen extends ConsumerWidget {
             
             const SizedBox(height: 32),
             _buildSectionHeader('Live Queue Load ⏱️', () => context.go('/vendor/orders')),
-            _buildQueueOverview(),
+            _buildQueueOverview(
+              vendorState.pendingOrders.length.toString(),
+              vendorState.activeOrders.where((o) => o.status == OrderStatus.preparing).length.toString(),
+              vendorState.activeOrders.where((o) => o.status == OrderStatus.ready).length.toString(),
+            ),
             
             const SizedBox(height: 32),
-            _buildSectionHeader('Top Items Today 🔥', () => context.go('/vendor/menu')),
+            _buildSectionHeader('Menu Items 🔥', () => context.go('/vendor/menu')),
             _buildTopItemsList(),
             
             const SizedBox(height: 40),
@@ -82,7 +90,7 @@ class RestaurantHomeScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildHeader(String name) {
+  Widget _buildHeader(String name, String status) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -90,9 +98,9 @@ class RestaurantHomeScreen extends ConsumerWidget {
           'Hi, $name! 👋',
           style: const TextStyle(fontSize: 26, fontWeight: FontWeight.bold, color: AppTheme.textDark),
         ),
-        const Text(
-          'Your canteen is currently Busy (Level 3)',
-          style: TextStyle(fontSize: 16, color: AppTheme.textLight),
+        Text(
+          'Your canteen is currently $status',
+          style: const TextStyle(fontSize: 16, color: AppTheme.textLight),
         ),
       ],
     );
@@ -111,14 +119,14 @@ class RestaurantHomeScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildQueueOverview() {
+  Widget _buildQueueOverview(String pending, String preparing, String ready) {
     return Row(
       children: [
-        _buildQueueCard('Pending', '8', AppTheme.warningOrange),
+        _buildQueueCard('Pending', pending, AppTheme.warningOrange),
         const SizedBox(width: 12),
-        _buildQueueCard('Preparing', '4', AppTheme.primaryPink),
+        _buildQueueCard('Preparing', preparing, AppTheme.primaryPink),
         const SizedBox(width: 12),
-        _buildQueueCard('Ready', '6', AppTheme.successGreen),
+        _buildQueueCard('Ready', ready, AppTheme.successGreen),
       ],
     );
   }

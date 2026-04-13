@@ -9,15 +9,15 @@ final authServiceProvider = Provider<AuthService>((ref) {
 
 // For tracking signup progress across screens
 class SignupData {
-  final String? emailOrPhone;
+  final String? email;
   final UserRole? role;
   final String? fullName;
 
-  SignupData({this.emailOrPhone, this.role, this.fullName});
+  SignupData({this.email, this.role, this.fullName});
 
-  SignupData copyWith({String? emailOrPhone, UserRole? role, String? fullName}) {
+  SignupData copyWith({String? email, UserRole? role, String? fullName}) {
     return SignupData(
-      emailOrPhone: emailOrPhone ?? this.emailOrPhone,
+      email: email ?? this.email,
       role: role ?? this.role,
       fullName: fullName ?? this.fullName,
     );
@@ -40,24 +40,24 @@ class AuthController extends Notifier<UserProfile?> {
     return null; // Begins conceptually unauthenticated
   }
 
-  Future<void> sendOtp(String emailOrPhone) async {
-    await ref.read(authServiceProvider).sendOtp(emailOrPhone);
-    ref.read(signupDataProvider.notifier).update((s) => s.copyWith(emailOrPhone: emailOrPhone));
+  Future<void> sendOtp(String email) async {
+    await ref.read(authServiceProvider).sendOtp(email);
+    ref.read(signupDataProvider.notifier).update((s) => s.copyWith(email: email));
   }
 
   Future<void> verifyOtp(String token) async {
-    final emailOrPhone = ref.read(signupDataProvider).emailOrPhone;
+    final email = ref.read(signupDataProvider).email;
     final role = ref.read(selectedRoleProvider);
-    if (emailOrPhone == null) throw Exception('Email or Phone not set');
-    await ref.read(authServiceProvider).verifyOtp(emailOrPhone, token, role: role);
+    if (email == null) throw Exception('Email not set');
+    await ref.read(authServiceProvider).verifyOtp(email, token, role: role);
   }
 
   Future<void> completeSignup(String password, String fullName, UserRole role) async {
     await ref.read(authServiceProvider).completeSignup(password, fullName, role);
   }
 
-  Future<void> login(String emailOrPhone, String password, {UserRole? role}) async {
-    await ref.read(authServiceProvider).login(emailOrPhone, password, role: role);
+  Future<void> login(String email, String password, {UserRole? role}) async {
+    await ref.read(authServiceProvider).login(email, password, role: role);
   }
 
   Future<void> logout() async {

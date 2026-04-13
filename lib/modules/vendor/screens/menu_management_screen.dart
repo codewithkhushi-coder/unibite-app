@@ -1,13 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/models/food_item.dart';
 import '../widgets/food_item_card.dart';
+import '../controllers/menu_controller.dart';
 
-class MenuManagementScreen extends StatelessWidget {
+class MenuManagementScreen extends ConsumerWidget {
   const MenuManagementScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return DefaultTabController(
       length: 4,
       child: Scaffold(
@@ -54,45 +57,47 @@ class MenuManagementScreen extends StatelessWidget {
   }
 }
 
-class _MenuCategoryList extends StatelessWidget {
+class _MenuCategoryList extends ConsumerWidget {
   final String category;
   const _MenuCategoryList({required this.category});
 
   @override
-  Widget build(BuildContext context) {
-    return ListView(
+  Widget build(BuildContext context, WidgetRef ref) {
+    final menuItems = ref.watch(vendorMenuControllerProvider);
+    final filteredItems = menuItems.where((item) => item.category.toLowerCase() == category.toLowerCase()).toList();
+
+    if (filteredItems.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.restaurant_menu_rounded, size: 48, color: Colors.grey.shade300),
+            const SizedBox(height: 16),
+            Text('No items in $category', style: const TextStyle(color: AppTheme.textLight)),
+          ],
+        ),
+      );
+    }
+
+    return ListView.builder(
       padding: const EdgeInsets.all(16),
-      children: [
-        FoodItemCard(
-          name: 'Paneer Masala Dosa',
-          price: '₹120',
-          category: category,
-          isAvailable: true,
-          stock: '45 left',
-          onEdit: () => context.push('/vendor/edit-item/item-1'),
-          onDelete: () {},
-        ),
-        const SizedBox(height: 12),
-        FoodItemCard(
-          name: 'Classic Club Sandwich',
-          price: '₹95',
-          category: category,
-          isAvailable: true,
-          stock: '22 left',
-          onEdit: () => context.push('/vendor/edit-item/item-2'),
-          onDelete: () {},
-        ),
-        const SizedBox(height: 12),
-        FoodItemCard(
-          name: 'Veg Burger Combo',
-          price: '₹150',
-          category: category,
-          isAvailable: false,
-          stock: 'Out of stock',
-          onEdit: () => context.push('/vendor/edit-item/item-3'),
-          onDelete: () {},
-        ),
-      ],
+      itemCount: filteredItems.length,
+      itemBuilder: (context, index) {
+        final item = filteredItems[index];
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 12),
+          child: FoodItemCard(
+            name: item.name,
+            price: '₹${item.price}',
+            category: item.category,
+            isAvailable: item.isAvailable,
+            stock: item.isAvailable ? 'Available' : 'Out of stock',
+            onEdit: () => context.push('/vendor/edit-item/${item.id}', extra: item),
+            onDelete: () => ref.read(vendorMenuControllerProvider.notifier).deleteItem(item.id!),
+          ),
+        );
+      },
     );
   }
 }
+

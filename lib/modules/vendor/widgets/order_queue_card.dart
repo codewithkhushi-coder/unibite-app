@@ -12,6 +12,7 @@ class OrderQueueCard extends StatelessWidget {
   final String time;
   final VoidCallback onAccept;
   final VoidCallback onReject;
+  final Function(String)? onStatusUpdate;
 
   const OrderQueueCard({
     super.key,
@@ -24,6 +25,7 @@ class OrderQueueCard extends StatelessWidget {
     required this.time,
     required this.onAccept,
     required this.onReject,
+    this.onStatusUpdate,
   });
 
   @override
@@ -124,7 +126,7 @@ class OrderQueueCard extends StatelessWidget {
         width: double.infinity,
         height: 50,
         child: ElevatedButton(
-          onPressed: () {},
+          onPressed: () => onStatusUpdate?.call(status == 'Accepted' ? 'Preparing' : 'Ready'),
           style: ElevatedButton.styleFrom(
             backgroundColor: AppTheme.primaryPink,
             foregroundColor: Colors.white,

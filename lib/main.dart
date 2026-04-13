@@ -6,14 +6,18 @@ import 'app.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
-  // Initialize Supabase. For dummy data/testing phase, fallbacks are managed internally
+  // Use environment variables for security
+  // Pass them via --dart-define=SUPABASE_URL=... and --dart-define=SUPABASE_ANON_KEY=...
+  const supabaseUrl = String.fromEnvironment('SUPABASE_URL', defaultValue: 'https://hlantiiywvsfkxlrxlsy.supabase.co');
+  const supabaseAnonKey = String.fromEnvironment('SUPABASE_ANON_KEY', defaultValue: 'sb_publishable_i3arh4wAwmuF5TsUSKMwKQ_fZp1YeA9');
+
   try {
     await Supabase.initialize(
-      url: 'http://127.0.0.1:54321', // Local testing URL
-      anonKey: 'eyJh...' // Replace with actual anonymous key later
+      url: supabaseUrl,
+      anonKey: supabaseAnonKey,
     );
   } catch (e) {
-    debugPrint('Supabase init failed (Running offline mode): \$e');
+    debugPrint('Supabase init failed: $e');
   }
   
   runApp(

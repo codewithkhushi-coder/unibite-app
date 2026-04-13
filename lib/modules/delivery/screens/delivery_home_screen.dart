@@ -3,20 +3,15 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../auth/controllers/auth_controller.dart';
 import '../widgets/delivery_request_card.dart';
+import '../controllers/delivery_controller.dart';
 
-class DeliveryHomeScreen extends ConsumerStatefulWidget {
+class DeliveryHomeScreen extends ConsumerWidget {
   const DeliveryHomeScreen({super.key});
 
   @override
-  ConsumerState<DeliveryHomeScreen> createState() => _DeliveryHomeScreenState();
-}
-
-class _DeliveryHomeScreenState extends ConsumerState<DeliveryHomeScreen> {
-  bool _isOnline = true;
-
-  @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final user = ref.watch(authControllerProvider);
+    final deliveryState = ref.watch(deliveryControllerProvider);
 
     return Scaffold(
       backgroundColor: AppTheme.surfaceWhite,
@@ -25,7 +20,7 @@ class _DeliveryHomeScreenState extends ConsumerState<DeliveryHomeScreen> {
         backgroundColor: Colors.white,
         elevation: 0,
         actions: [
-          _buildOnlineStatusToggle(),
+          _buildOnlineStatusToggle(ref, deliveryState.isOnline),
           const SizedBox(width: 8),
         ],
       ),
@@ -40,11 +35,11 @@ class _DeliveryHomeScreenState extends ConsumerState<DeliveryHomeScreen> {
             const SizedBox(height: 32),
             _buildSectionHeader('New Delivery Requests 🔥', () {}),
             const SizedBox(height: 16),
-            _buildRequestsList(),
+            _buildRequestsList(ref, deliveryState),
             const SizedBox(height: 32),
             _buildSectionHeader('Current Activity 📍', () {}),
             const SizedBox(height: 16),
-            _buildQuickActionCards(),
+            _buildQuickActionCards(deliveryState),
             const SizedBox(height: 40),
           ],
         ),
@@ -52,28 +47,28 @@ class _DeliveryHomeScreenState extends ConsumerState<DeliveryHomeScreen> {
     );
   }
 
-  Widget _buildOnlineStatusToggle() {
+  Widget _buildOnlineStatusToggle(WidgetRef ref, bool isOnline) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
       decoration: BoxDecoration(
-        color: _isOnline ? AppTheme.successGreen.withOpacity(0.1) : Colors.grey.shade100,
+        color: isOnline ? AppTheme.successGreen.withOpacity(0.1) : Colors.grey.shade100,
         borderRadius: BorderRadius.circular(20),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           Text(
-            _isOnline ? 'Online' : 'Offline',
+            isOnline ? 'Online' : 'Offline',
             style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.bold,
-              color: _isOnline ? AppTheme.successGreen : Colors.grey.shade600,
+              color: isOnline ? AppTheme.successGreen : Colors.grey.shade600,
             ),
           ),
           const SizedBox(width: 4),
           Switch(
-            value: _isOnline,
-            onChanged: (v) => setState(() => _isOnline = v),
+            value: isOnline,
+            onChanged: (v) => ref.read(deliveryControllerProvider.notifier).toggleOnlineStatus(v),
             activeColor: AppTheme.successGreen,
             activeTrackColor: AppTheme.successGreen.withOpacity(0.3),
             materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
@@ -125,9 +120,9 @@ class _DeliveryHomeScreenState extends ConsumerState<DeliveryHomeScreen> {
             children: [
               Text('Today\'s Earnings', style: TextStyle(color: Colors.white70, fontSize: 13)),
               SizedBox(height: 4),
-              Text('₹840.50', style: TextStyle(color: Colors.white, fontSize: 32, fontWeight: FontWeight.bold)),
+              Text('₹--.--', style: TextStyle(color: Colors.white, fontSize: 32, fontWeight: FontWeight.bold)),
               SizedBox(height: 4),
-              Text('12 deliveries completed', style: TextStyle(color: Colors.white70, fontSize: 12)),
+              Text('Connect wallet to see details', style: TextStyle(color: Colors.white70, fontSize: 12)),
             ],
           ),
           Container(
@@ -150,8 +145,8 @@ class _DeliveryHomeScreenState extends ConsumerState<DeliveryHomeScreen> {
     );
   }
 
-  Widget _buildRequestsList() {
-    if (!_isOnline) {
+  Widget _buildRequestsList(WidgetRef ref, DeliveryState state) {
+    if (!state.isOnline) {
       return Container(
         width: double.infinity,
         padding: const EdgeInsets.all(32),
@@ -177,37 +172,31 @@ class _DeliveryHomeScreenState extends ConsumerState<DeliveryHomeScreen> {
       );
     }
 
+    if (state.availableOrders.isEmpty) {
+      return const Center(child: Text('Searching for requests...', style: TextStyle(color: AppTheme.textLight)));
+    }
+
     return Column(
-      children: [
-        DeliveryRequestCard(
-          customerName: 'Khushi S.',
-          canteenName: 'LHC South Canteen',
-          pickupLoc: 'LHC Ground Floor',
-          dropLoc: 'Hostel Block B, Room 302',
+      children: state.availableOrders.map((order) => Padding(
+        padding: const EdgeInsets.only(bottom: 16),
+        child: DeliveryRequestCard(
+          customerName: 'Customer', // Would fetch name from order
+          canteenName: order.canteenName,
+          pickupLoc: order.canteenName, // Canteen location
+          dropLoc: order.deliveryLocation ?? 'Student Housing',
           distance: '0.8 km',
           estTime: '12 mins',
-          onAccept: () {},
+          onAccept: () => ref.read(deliveryControllerProvider.notifier).acceptDelivery(order.id),
           onReject: () {},
         ),
-        const SizedBox(height: 16),
-        DeliveryRequestCard(
-          customerName: 'Harsh V.',
-          canteenName: 'Juice Bar (Main Block)',
-          pickupLoc: 'Admin Block Canteen',
-          dropLoc: 'Library Reading Room',
-          distance: '1.2 km',
-          estTime: '15 mins',
-          onAccept: () {},
-          onReject: () {},
-        ),
-      ],
+      )).toList(),
     );
   }
 
-  Widget _buildQuickActionCards() {
+  Widget _buildQuickActionCards(DeliveryState state) {
     return Row(
       children: [
-        _buildActionCard(Icons.local_shipping_outlined, '4 Pending', 'Pickups'),
+        _buildActionCard(Icons.local_shipping_outlined, state.assignedAssignments.length.toString(), 'Assignments'),
         const SizedBox(width: 16),
         _buildActionCard(Icons.star_outline_rounded, '4.8', 'Rider Rating'),
       ],
@@ -235,3 +224,4 @@ class _DeliveryHomeScreenState extends ConsumerState<DeliveryHomeScreen> {
     );
   }
 }
+

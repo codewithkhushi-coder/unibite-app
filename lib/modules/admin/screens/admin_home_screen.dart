@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../auth/controllers/auth_controller.dart';
 import '../widgets/admin_stat_card.dart';
+import '../controllers/admin_controller.dart';
 
 class AdminHomeScreen extends ConsumerWidget {
   const AdminHomeScreen({super.key});
@@ -10,6 +11,7 @@ class AdminHomeScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final user = ref.watch(authControllerProvider);
+    final adminState = ref.watch(adminControllerProvider);
 
     return Scaffold(
       backgroundColor: AppTheme.surfaceWhite,
@@ -43,30 +45,30 @@ class AdminHomeScreen extends ConsumerWidget {
               childAspectRatio: 1.1,
               children: [
                 AdminStatCard(
-                  title: 'Revenue Today',
-                  value: '₹34,800',
-                  subtitle: '+22% vs yesterday',
+                  title: 'Total Revenue',
+                  value: '₹${adminState.dailyRevenue.toStringAsFixed(0)}',
+                  subtitle: 'Total completed sales',
                   icon: Icons.account_balance_wallet_rounded,
                   color: AppTheme.primaryPink,
                 ),
                 AdminStatCard(
                   title: 'Live Orders',
-                  value: '84',
-                  subtitle: '12 high priority',
+                  value: adminState.activeOrders.toString(),
+                  subtitle: 'Currently active',
                   icon: Icons.sensors_rounded,
                   color: Colors.blue,
                 ),
                 AdminStatCard(
                   title: 'Total Users',
-                  value: '2,450',
-                  subtitle: '88 new today',
+                  value: adminState.totalUsers.toString(),
+                  subtitle: 'Registered profiles',
                   icon: Icons.people_alt_rounded,
                   color: AppTheme.successGreen,
                 ),
                 AdminStatCard(
                   title: 'Active Riders',
-                  value: '24',
-                  subtitle: '4 online now',
+                  value: adminState.activeRiders.toString(),
+                  subtitle: 'Total delivery partners',
                   icon: Icons.moped_rounded,
                   color: AppTheme.warningOrange,
                 ),
@@ -75,14 +77,15 @@ class AdminHomeScreen extends ConsumerWidget {
             
             const SizedBox(height: 32),
             _buildSectionHeader('Ecosystem Health 🏥'),
-            _buildHealthItem('Canteen Uptime', '98.5%', AppTheme.successGreen),
+            _buildHealthItem('Platform Uptime', '99.9%', AppTheme.successGreen),
             _buildHealthItem('Avg Delivery Time', '14.2m', Colors.blue),
-            _buildHealthItem('Customer Rating', '4.8/5', AppTheme.primaryPink),
+            _buildHealthItem('Overall Rating', '4.8/5', AppTheme.primaryPink),
             
             const SizedBox(height: 32),
-            _buildSectionHeader('Quick Insights 🤖'),
-            _buildInsightCard('Peak Hour Prediction', '12:45 PM is expected to be busy', Icons.trending_up_rounded),
-            _buildInsightCard('Stock Alert', 'Engineering Canteen low on "Tea"', Icons.error_outline_rounded),
+            _buildSectionHeader('System Alerts 🤖'),
+            if (adminState.activeOrders > 50)
+              _buildInsightCard('High Load Alert', 'System is experiencing high order volume', Icons.trending_up_rounded),
+            _buildInsightCard('Database Connected', 'Supabase cluster is operational', Icons.check_circle_outline_rounded),
             
             const SizedBox(height: 40),
           ],
@@ -152,3 +155,4 @@ class AdminHomeScreen extends ConsumerWidget {
     );
   }
 }
+

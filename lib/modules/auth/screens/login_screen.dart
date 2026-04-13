@@ -86,8 +86,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 const SizedBox(height: 48),
                 TextFormField(
                   controller: _contactController,
+                  keyboardType: TextInputType.emailAddress,
                   decoration: const InputDecoration(
-                    hintText: 'Email or Phone Number',
+                    hintText: 'University Email Address',
                     prefixIcon: Icon(LucideIcons.mail, size: 20),
                   ),
                   validator: (value) =>

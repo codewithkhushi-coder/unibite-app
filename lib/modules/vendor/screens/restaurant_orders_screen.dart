@@ -1,15 +1,19 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/models/order.dart';
 import '../widgets/order_queue_card.dart';
+import '../controllers/vendor_controller.dart';
 
-class RestaurantOrdersScreen extends StatefulWidget {
+class RestaurantOrdersScreen extends ConsumerStatefulWidget {
   const RestaurantOrdersScreen({super.key});
 
   @override
-  State<RestaurantOrdersScreen> createState() => _RestaurantOrdersScreenState();
+  ConsumerState<RestaurantOrdersScreen> createState() => _RestaurantOrdersScreenState();
 }
 
-class _RestaurantOrdersScreenState extends State<RestaurantOrdersScreen> with SingleTickerProviderStateMixin {
+class _RestaurantOrdersScreenState extends ConsumerState<RestaurantOrdersScreen> with SingleTickerProviderStateMixin {
   late TabController _tabController;
 
   @override
@@ -20,6 +24,8 @@ class _RestaurantOrdersScreenState extends State<RestaurantOrdersScreen> with Si
 
   @override
   Widget build(BuildContext context) {
+    final vendorState = ref.watch(vendorControllerProvider);
+
     return Scaffold(
       backgroundColor: AppTheme.surfaceWhite,
       appBar: AppBar(
@@ -33,84 +39,78 @@ class _RestaurantOrdersScreenState extends State<RestaurantOrdersScreen> with Si
           indicatorColor: AppTheme.primaryPink,
           indicatorWeight: 3,
           labelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
-          tabs: const [
-            Tab(text: 'Incoming (8)'),
-            Tab(text: 'Active (4)'),
-            Tab(text: 'Completed'),
+          tabs: [
+            Tab(text: 'Incoming (${vendorState.pendingOrders.length})'),
+            Tab(text: 'Active (${vendorState.activeOrders.length})'),
+            const Tab(text: 'Completed'),
           ],
         ),
       ),
       body: TabBarView(
         controller: _tabController,
         children: [
-          _buildIncomingOrders(),
-          _buildActiveOrders(),
-          _buildCompletedOrders(),
+          _buildOrderList(vendorState.pendingOrders),
+          _buildOrderList(vendorState.activeOrders),
+          _buildOrderList(vendorState.completedOrders, isHistory: true),
         ],
       ),
     );
   }
 
-  Widget _buildIncomingOrders() {
-    return ListView(
+  Widget _buildOrderList(List<Order> orders, {bool isHistory = false}) {
+    if (orders.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(isHistory ? Icons.history_rounded : Icons.shopping_basket_outlined, size: 64, color: Colors.grey.shade300),
+            const SizedBox(height: 16),
+            Text(isHistory ? 'No order history yet' : 'No orders in this queue', style: const TextStyle(color: AppTheme.textLight)),
+          ],
+        ),
+      );
+    }
+
+    return ListView.separated(
       padding: const EdgeInsets.all(16),
-      children: [
-        OrderQueueCard(
-          orderId: 'UB-2104',
-          customerName: 'Aarav M.',
-          items: '2x Masala Dosa, 1x Filter Coffee',
-          total: '₹240',
-          type: 'Pickup',
-          status: 'New',
-          time: '2 mins ago',
-          onAccept: () {},
-          onReject: () {},
-        ),
-        const SizedBox(height: 16),
-        OrderQueueCard(
-          orderId: 'UB-2105',
-          customerName: 'Ishani R.',
-          items: '1x Classic Burger, 1x Large Fries',
-          total: '₹320',
-          type: 'Delivery',
-          status: 'New',
-          time: '5 mins ago',
-          onAccept: () {},
-          onReject: () {},
-        ),
-      ],
+      itemCount: orders.length,
+      separatorBuilder: (_, __) => const SizedBox(height: 16),
+      itemBuilder: (context, index) {
+        final order = orders[index];
+        return OrderQueueCard(
+          orderId: order.id.substring(0, 8).toUpperCase(),
+          customerName: 'Customer', 
+          items: order.items.map((i) => '${i.quantity}x ${i.foodItem.name}').join(', '),
+          total: '₹${order.totalAmount.toStringAsFixed(0)}',
+          type: order.type == OrderType.pickup ? 'Pickup' : 'Delivery',
+          status: _getStatusString(order.status),
+          time: _getTimeAgo(order.orderTime),
+          onAccept: () => ref.read(vendorControllerProvider.notifier).updateOrderStatus(order.id, OrderStatus.preparing),
+          onReject: () => ref.read(vendorControllerProvider.notifier).updateOrderStatus(order.id, OrderStatus.cancelled),
+          onStatusUpdate: (newStatus) {
+            final nextStatus = newStatus == 'Preparing' ? OrderStatus.preparing : OrderStatus.ready;
+            ref.read(vendorControllerProvider.notifier).updateOrderStatus(order.id, nextStatus);
+          },
+        );
+      },
     );
   }
 
-  Widget _buildActiveOrders() {
-    return ListView(
-      padding: const EdgeInsets.all(16),
-      children: [
-        OrderQueueCard(
-          orderId: 'UB-2098',
-          customerName: 'Rahul K.',
-          items: '1x Paneer Tikka Bowl',
-          total: '₹180',
-          type: 'Pickup',
-          status: 'Preparing',
-          time: 'Started 12m ago',
-          onAccept: () {},
-          onReject: () {},
-        ),
-      ],
-    );
+  String _getStatusString(OrderStatus status) {
+    switch (status) {
+      case OrderStatus.accepted: return 'New';
+      case OrderStatus.preparing: return 'Preparing';
+      case OrderStatus.ready: return 'Ready';
+      case OrderStatus.delivered: return 'Completed';
+      case OrderStatus.cancelled: return 'Cancelled';
+      default: return 'Active';
+    }
   }
 
-  Widget _buildCompletedOrders() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.history_rounded, size: 64, color: Colors.grey.shade300),
-          const SizedBox(height: 16),
-          const Text('Today\'s History (32 Completed)', style: TextStyle(color: AppTheme.textLight)),
-        ],
-      ),
-    );
+  String _getTimeAgo(DateTime time) {
+    final diff = DateTime.now().difference(time);
+    if (diff.inMinutes < 60) return '${diff.inMinutes} min ago';
+    return DateFormat('hh:mm a').format(time);
   }
 }
+

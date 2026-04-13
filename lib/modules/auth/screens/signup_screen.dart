@@ -67,20 +67,24 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                 ),
                 const SizedBox(height: 12),
                 const Text(
-                  'Enter your email or phone number to receive a verification code.',
+                  'Enter your email address to receive a verification code.',
                   textAlign: TextAlign.center,
                   style: TextStyle(color: AppTheme.textLight),
                 ),
                 const SizedBox(height: 48),
                 TextFormField(
                   controller: _contactController,
+                  keyboardType: TextInputType.emailAddress,
                   decoration: const InputDecoration(
-                    hintText: 'Email or Phone Number',
+                    hintText: 'University Email Address',
                     prefixIcon: Icon(LucideIcons.mail, size: 20),
                   ),
                   validator: (value) {
                     if (value == null || value.isEmpty) {
-                      return 'Please enter your email or phone number';
+                      return 'Please enter your email';
+                    }
+                    if (!value.contains('@')) {
+                      return 'Please enter a valid email address';
                     }
                     return null;
                   },

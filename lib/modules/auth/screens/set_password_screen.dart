@@ -39,13 +39,25 @@ class _SetPasswordScreenState extends ConsumerState<SetPasswordScreen> {
         _selectedRole,
       );
       if (mounted) {
-        // After signup complete, user is logged in. Router will redirect to dashboard.
-        context.go('/'); 
+        // Redirect to login screen after successful signup and signout
+        context.go('/login'); 
       }
     } catch (e) {
       if (mounted) {
+        final errorMessage = e.toString().replaceFirst('Exception: ', '');
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: ${e.toString()}'), backgroundColor: AppTheme.errorRed),
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.error_outline, color: Colors.white),
+                const SizedBox(width: 12),
+                Expanded(child: Text(errorMessage)),
+              ],
+            ),
+            backgroundColor: AppTheme.errorRed,
+            behavior: SnackBarBehavior.floating,
+            duration: const Duration(seconds: 5),
+          ),
         );
       }
     } finally {

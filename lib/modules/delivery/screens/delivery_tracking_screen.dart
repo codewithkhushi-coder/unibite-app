@@ -1,25 +1,34 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/models/order.dart';
 import '../widgets/map_placeholder.dart';
 import '../widgets/location_status_card.dart';
+import '../controllers/delivery_controller.dart';
 
-class DeliveryTrackingScreen extends StatefulWidget {
-  final String orderId;
-  const DeliveryTrackingScreen({super.key, required this.orderId});
+class DeliveryTrackingScreen extends ConsumerStatefulWidget {
+  final Order order;
+  const DeliveryTrackingScreen({super.key, required this.order});
 
   @override
-  State<DeliveryTrackingScreen> createState() => _DeliveryTrackingScreenState();
+  ConsumerState<DeliveryTrackingScreen> createState() => _DeliveryTrackingScreenState();
 }
 
-class _DeliveryTrackingScreenState extends State<DeliveryTrackingScreen> {
-  String _currentStatus = 'Picked up';
+class _DeliveryTrackingScreenState extends ConsumerState<DeliveryTrackingScreen> {
+  late OrderStatus _currentStatus;
+
+  @override
+  void initState() {
+    super.initState();
+    _currentStatus = widget.order.status;
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
-        title: Text('Order #${widget.orderId}', style: const TextStyle(fontWeight: FontWeight.bold)),
+        title: Text('Order #${widget.order.id.substring(0, 8).toUpperCase()}', style: const TextStyle(fontWeight: FontWeight.bold)),
         backgroundColor: Colors.white,
         elevation: 0,
         actions: [
@@ -37,8 +46,8 @@ class _DeliveryTrackingScreenState extends State<DeliveryTrackingScreen> {
             left: 16,
             right: 16,
             child: LocationStatusCard(
-              title: _currentStatus,
-              subtitle: 'On the way to Hostel Block B',
+              title: _getStatusDisplay(_currentStatus),
+              subtitle: 'Delivery to ${widget.order.deliveryLocation ?? 'Student Housing'}',
               icon: Icons.directions_bike_rounded,
             ),
           ),
@@ -53,6 +62,14 @@ class _DeliveryTrackingScreenState extends State<DeliveryTrackingScreen> {
         ],
       ),
     );
+  }
+
+  String _getStatusDisplay(OrderStatus status) {
+    switch (status) {
+      case OrderStatus.outForDelivery: return 'Picked up';
+      case OrderStatus.delivered: return 'Delivered';
+      default: return 'In Transit';
+    }
   }
 
   Widget _buildActionPanel() {
@@ -80,8 +97,8 @@ class _DeliveryTrackingScreenState extends State<DeliveryTrackingScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Khushi S.', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
-                    Text('Customer (Hostel B, Room 302)', style: TextStyle(color: AppTheme.textLight, fontSize: 12)),
+                    Text('Customer', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+                    Text('Dest: Student Housing', style: TextStyle(color: AppTheme.textLight, fontSize: 12)),
                   ],
                 ),
               ),
@@ -98,24 +115,26 @@ class _DeliveryTrackingScreenState extends State<DeliveryTrackingScreen> {
             width: double.infinity,
             height: 60,
             child: ElevatedButton(
-              onPressed: () {
-                setState(() {
-                  if (_currentStatus == 'Picked up') _currentStatus = 'Arrived at Location';
-                  else if (_currentStatus == 'Arrived at Location') _currentStatus = 'Delivered';
-                });
+              onPressed: () async {
+                if (_currentStatus == OrderStatus.outForDelivery) {
+                  setState(() => _currentStatus = OrderStatus.ready); // Local visual for 'Arrived'
+                } else if (_currentStatus == OrderStatus.ready || _currentStatus == OrderStatus.accepted) {
+                   await ref.read(deliveryControllerProvider.notifier).completeDelivery(widget.order.id);
+                   setState(() => _currentStatus = OrderStatus.delivered);
+                }
               },
               style: ElevatedButton.styleFrom(
-                backgroundColor: _currentStatus == 'Delivered' ? AppTheme.successGreen : AppTheme.primaryPink,
+                backgroundColor: _currentStatus == OrderStatus.delivered ? AppTheme.successGreen : AppTheme.primaryPink,
                 foregroundColor: Colors.white,
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
                 elevation: 0,
               ),
               child: Text(
-                _currentStatus == 'Picked up' 
+                _currentStatus == OrderStatus.outForDelivery
                     ? 'Reached Location' 
-                    : _currentStatus == 'Arrived at Location' 
-                        ? 'Confirm Delivery' 
-                        : 'Order Delivered ✅',
+                    : _currentStatus == OrderStatus.delivered
+                        ? 'Order Delivered ✅'
+                        : 'Confirm Delivery',
                 style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
               ),
             ),
