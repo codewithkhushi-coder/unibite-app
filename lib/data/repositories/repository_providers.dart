@@ -8,7 +8,7 @@ import 'menu_repository_impl.dart';
 final supabaseDatasourceProvider = Provider((ref) => SupabaseDatasource());
 
 final canteenRepositoryProvider = Provider<CanteenRepository>((ref) {
-  return CanteenRepositoryImpl(ref.watch(supabaseDatasourceProvider));
+  return CanteenRepositoryImpl();
 });
 
 final orderRepositoryProvider = Provider<OrderRepository>((ref) {
@@ -20,5 +20,5 @@ final userRepositoryProvider = Provider<UserRepository>((ref) {
 });
 
 final menuRepositoryProvider = Provider<MenuRepository>((ref) {
-  return MenuRepositoryImpl(ref.watch(supabaseDatasourceProvider));
+  return MenuRepositoryImpl();
 });

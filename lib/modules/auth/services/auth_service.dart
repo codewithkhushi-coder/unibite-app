@@ -1,94 +1,61 @@
 import 'dart:async';
+// ignore: unused_import
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../core/models/user_profile.dart';
 import '../../../core/models/user_role.dart';
 
 class AuthService {
-  final SupabaseClient _client = Supabase.instance.client;
+  // Use a StreamController to broadcast our mock auth state locally
+  final StreamController<UserProfile?> _authStateController = StreamController<UserProfile?>.broadcast();
+  UserProfile? _currentUser;
 
-  // Stream of auth state changes (strictly following Supabase session + database profile)
-  Stream<UserProfile?> get authStateChanges {
-    return _client.auth.onAuthStateChange.asyncMap((event) async {
-      final user = event.session?.user;
-      if (user == null) return null;
+  // Stream of auth state changes
+  Stream<UserProfile?> get authStateChanges => _authStateController.stream;
 
-      try {
-        final profileData = await _client
-            .from('profiles')
-            .select()
-            .eq('id', user.id)
-            .maybeSingle();
-
-        if (profileData != null) {
-          return UserProfile.fromJson({
-            ...profileData,
-            'email': user.email ?? '',
-          });
-        }
-        
-        // If no profile exists in DB, it's a new user during signup flow
-        return UserProfile(
-          id: user.id,
-          email: user.email ?? '',
-          fullName: 'New User',
-          role: UserRole.user,
-          isPlaceholder: true, // Crucial for router to know we're not finished
-        );
-      } catch (e) {
-        return null;
-      }
-    });
+  AuthService() {
+    // Push null initially so the app knows we are unauthenticated
+    Future.microtask(() => _authStateController.add(null));
   }
 
   Future<void> sendOtp(String email) async {
-    // Only Email OTP is supported now
-    await _client.auth.signInWithOtp(email: email);
+    // Mock sending OTP. Wait a bit to simulate network request.
+    await Future.delayed(const Duration(seconds: 1));
   }
 
   Future<void> verifyOtp(String email, String token, {UserRole? role}) async {
-    await _client.auth.verifyOTP(
-      token: token,
-      type: OtpType.signup, // Standard for registration verification
-      email: email,
-    );
+    // Mock verify OTP. 
+    await Future.delayed(const Duration(seconds: 1));
   }
 
   Future<void> completeSignup(String password, String fullName, UserRole role) async {
-    final user = _client.auth.currentUser;
-    if (user == null) throw Exception('Session expired. Please start over.');
-
-    try {
-      // 1. Update password
-      await _client.auth.updateUser(UserAttributes(password: password));
-      
-      // 2. Create profile in database
-      final response = await _client.from('profiles').upsert({
-        'id': user.id,
-        'name': fullName,
-        'role': role.name,
-        'email': user.email,
-      }).select();
-
-      if (response == null) {
-        throw Exception('Database error: Failed to save your profile.');
-      }
-
-      // 3. Clear data and sign out for a clean login
-      await signOut();
-    } on AuthException catch (e) {
-      throw Exception('Auth error: ${e.message}');
-    } on PostgrestException catch (e) {
-      throw Exception('Database error: ${e.message}');
-    } catch (e) {
-      throw Exception('Unexpected error: $e');
-    }
+    // Mock completing signup and creating a local profile.
+    await Future.delayed(const Duration(seconds: 1));
+    
+    // After signup, we log them out to force a clean login flow, matching the original logic
+    _currentUser = null;
+    _authStateController.add(null);
   }
 
   Future<void> login(String email, String password, {UserRole? role}) async {
-    await _client.auth.signInWithPassword(email: email, password: password);
+    await Future.delayed(const Duration(seconds: 1));
+    
+    // Create a dummy user profile
+    _currentUser = UserProfile(
+      id: 'mock-user-id-123',
+      email: email,
+      fullName: 'Test User',
+      role: role ?? UserRole.user,
+    );
+    
+    // Broadcast the new authenticated state
+    _authStateController.add(_currentUser);
   }
 
-  Future<void> logout() async => await _client.auth.signOut();
-  Future<void> signOut() async => await _client.auth.signOut();
+  Future<void> logout() async {
+    _currentUser = null;
+    _authStateController.add(null);
+  }
+  
+  Future<void> signOut() async => logout();
 }
 
